@@ -1,0 +1,43 @@
+services:
+  ytarchive:
+    build: .
+    # Or use a published image instead of building:
+    # image: ghcr.io/gvrxx/youtube-archiver:latest
+    container_name: ytarchive
+    restart: unless-stopped
+    # A minimal init as PID 1 reaps finished child processes, which Python
+    # itself does not do for processes it did not start directly.
+    init: true
+
+    ports:
+      # host:container — change the left number if 8800 is already taken.
+      - "8800:8800"
+
+    volumes:
+      # Settings, database and logs. Small, but back this up: it is what stops
+      # videos being downloaded twice.
+      - ./config:/config
+      # Your archive. Point this at wherever you keep media.
+      - ./downloads:/downloads
+
+    environment:
+      # File ownership on the host. 99:100 is Unraid's nobody:users.
+      # On a normal Linux desktop use your own — check with `id -u` / `id -g`.
+      - PUID=99
+      - PGID=100
+      - UMASK=022
+      - TZ=Europe/London
+
+      # Minutes between checks. 0 disables the loop entirely.
+      - YTARCHIVE_INTERVAL=60
+
+      # STRONGLY RECOMMENDED once the port is reachable from your network.
+      # The interface can start downloads and change settings, so leaving it
+      # open lets anyone who can reach the port control it.
+      # - YTARCHIVE_AUTH=admin:pick-a-real-password
+
+      # Keep yt-dlp current while the container runs. YouTube breaks older
+      # builds within weeks; without this, downloads quietly stop.
+      # Hours between checks (0 = never). "nightly" gets YouTube fixes sooner.
+      - YTARCHIVE_YTDLP_UPDATE_HOURS=24
+      - YTARCHIVE_YTDLP_CHANNEL=stable

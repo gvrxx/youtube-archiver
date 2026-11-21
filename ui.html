@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ytarchive</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel-2: #f0f2f5;
+  --border: #e0e4ea;
+  --text: #171a1f;
+  --muted: #6b7280;
+  --accent: #4f5bd5;
+  --accent-soft: #eceefc;
+  --ok: #1f9d5b;
+  --warn: #b7791f;
+  --bad: #d0342c;
+  --shadow: 0 1px 2px rgba(16,20,30,.06), 0 8px 24px rgba(16,20,30,.06);
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1014;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --border: #282d38;
+    --text: #e7e9ee;
+    --muted: #8b93a5;
+    --accent: #7c8cff;
+    --accent-soft: #1e2340;
+    --ok: #3ecf8e;
+    --warn: #e0b252;
+    --bad: #f2685c;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--accent); }
+
+/* ---------- shell ---------- */
+.app { display: grid; grid-template-columns: 232px 1fr; height: 100vh; }
+.sidebar {
+  background: var(--panel); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; padding: 18px 14px; gap: 22px; overflow-y: auto;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.brand .mark {
+  width: 28px; height: 28px; border-radius: 8px; flex: none;
+  background: linear-gradient(140deg, var(--accent), #a67cff);
+  display: grid; place-items: center; color: #fff; font-size: 15px;
+}
+.brand h1 { font-size: 15px; margin: 0; letter-spacing: -.01em; }
+.brand small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; }
+
+nav { display: flex; flex-direction: column; gap: 2px; }
+nav button {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 10px; border: 0; border-radius: 8px; background: none;
+  cursor: pointer; text-align: left; color: var(--muted); font-weight: 500;
+}
+nav button:hover { background: var(--panel-2); color: var(--text); }
+nav button.on { background: var(--accent-soft); color: var(--accent); }
+nav button .count {
+  margin-left: auto; font-size: 11px; font-variant-numeric: tabular-nums;
+  background: var(--panel-2); padding: 1px 7px; border-radius: 20px; color: var(--muted);
+}
+nav button.on .count { background: rgba(127,140,255,.2); color: var(--accent); }
+
+.stats { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 6px; }
+.stat .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.stat .v { font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
+.stat .v small { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* ---------- main ---------- */
+main { overflow-y: auto; display: flex; flex-direction: column; }
+header {
+  position: sticky; top: 0; z-index: 5; background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 26px; display: flex; align-items: center; gap: 12px;
+}
+header h2 { margin: 0; font-size: 19px; letter-spacing: -.02em; }
+header .spacer { flex: 1; }
+.content { padding: 22px 26px 60px; }
+
+.btn {
+  border: 1px solid var(--border); background: var(--panel); border-radius: 9px;
+  padding: 7px 13px; cursor: pointer; font-weight: 500; white-space: nowrap;
+}
+.btn:hover { background: var(--panel-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: none; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { background: var(--panel-2); color: var(--text); }
+.btn.danger { color: var(--bad); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.sm { padding: 4px 9px; font-size: 12px; border-radius: 7px; }
+
+input[type=text], input[type=search], input[type=number], select {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 9px; padding: 8px 11px; width: 100%;
+}
+input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+select { cursor: pointer; }
+
+/* ---------- live bar ---------- */
+.live {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; margin-bottom: 20px; box-shadow: var(--shadow);
+}
+.live .top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.live .title { font-weight: 600; letter-spacing: -.01em; }
+.live .sub { color: var(--muted); font-size: 12px; }
+.live .pct { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; }
+.track { height: 7px; background: var(--panel-2); border-radius: 20px; overflow: hidden; margin: 10px 0 8px; }
+.fill {
+  height: 100%; border-radius: 20px; width: 0;
+  background: linear-gradient(90deg, var(--accent), #a67cff);
+  transition: width .35s cubic-bezier(.4,0,.2,1);
+}
+.fill.indeterminate {
+  width: 35% !important; animation: slide 1.3s ease-in-out infinite;
+}
+@keyframes slide { 0%{margin-left:-35%} 100%{margin-left:100%} }
+.live .meta {
+  display: flex; gap: 16px; font-size: 12px; color: var(--muted);
+  font-variant-numeric: tabular-nums; flex-wrap: wrap;
+}
+
+/* ---------- cards / grid ---------- */
+.grid {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;
+}
+.card .thumb {
+  aspect-ratio: 16/9; background: var(--panel-2); position: relative;
+  display: grid; place-items: center; color: var(--muted); font-size: 22px;
+}
+.card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card .thumb .badge {
+  position: absolute; right: 7px; bottom: 7px; background: rgba(0,0,0,.72);
+  color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 5px;
+  letter-spacing: .03em; text-transform: uppercase;
+}
+.card .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.card .name {
+  font-weight: 550; font-size: 13px; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card .foot {
+  margin-top: auto; display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--muted);
+}
+.card .foot .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- source rows ---------- */
+.rows { display: flex; flex-direction: column; gap: 10px; }
+.row {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px; display: grid; gap: 12px;
+  grid-template-columns: 1fr auto; align-items: center; box-shadow: var(--shadow);
+}
+.row .info { min-width: 0; }
+.row .nm { font-weight: 600; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; }
+.row .nm .tag {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  padding: 2px 7px; border-radius: 20px; background: var(--panel-2); color: var(--muted);
+  font-weight: 600;
+}
+.row .nm .tag.pl { background: var(--accent-soft); color: var(--accent); }
+.row .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.row .ctl { display: flex; align-items: center; gap: 8px; }
+.row .ctl select { width: auto; min-width: 118px; }
+.row.off { opacity: .55; }
+
+.bar { height: 4px; background: var(--panel-2); border-radius: 20px; margin-top: 9px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ok); border-radius: 20px; }
+
+/* ---------- lists ---------- */
+.list { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.item { padding: 11px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; }
+.item:last-child { border-bottom: 0; }
+.item .n { flex: 1; min-width: 0; }
+.item .n div:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .n small { color: var(--muted); font-size: 11.5px; }
+.pill {
+  font-size: 10.5px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+}
+.pill.wait { background: var(--panel-2); color: var(--muted); }
+.pill.defer { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.pill.bad { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+
+pre.log {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px; margin: 0; overflow-x: auto; max-height: 460px; overflow-y: auto;
+  font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted);
+  box-shadow: var(--shadow);
+}
+pre.log b { color: var(--text); font-weight: 500; }
+
+/* ---------- library list view ---------- */
+.lrow {
+  display: grid; grid-template-columns: 76px 1fr auto auto;
+  gap: 12px; align-items: center;
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+}
+.lrow:last-child { border-bottom: 0; }
+.lrow:hover { background: var(--panel-2); }
+.lrow .th {
+  width: 76px; aspect-ratio: 16/9; border-radius: 5px; overflow: hidden;
+  background: var(--panel-2); display: grid; place-items: center;
+  color: var(--muted); font-size: 11px;
+}
+.lrow .th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lrow .t { min-width: 0; }
+.lrow .t div:first-child {
+  font-weight: 550; font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lrow .t small { color: var(--muted); font-size: 11.5px; }
+.lrow .sz {
+  font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+  text-align: right; white-space: nowrap;
+}
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.seg button {
+  border: 0; background: var(--panel); padding: 7px 11px; cursor: pointer;
+  color: var(--muted); font-weight: 500;
+}
+.seg button.on { background: var(--accent-soft); color: var(--accent); }
+.seg button + button { border-left: 1px solid var(--border); }
+
+.empty { text-align: center; padding: 64px 20px; color: var(--muted); }
+.empty .big { font-size: 34px; margin-bottom: 10px; }
+.empty h3 { margin: 0 0 6px; color: var(--text); font-size: 16px; }
+
+.section-title {
+  font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+  font-weight: 650; margin: 26px 0 11px;
+}
+.section-title:first-child { margin-top: 0; }
+
+/* ---------- modal ---------- */
+.scrim {
+  position: fixed; inset: 0; background: rgba(8,10,14,.55); backdrop-filter: blur(3px);
+  display: grid; place-items: center; z-index: 40; padding: 20px;
+}
+.modal {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+  width: min(540px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h3 { margin: 0; padding: 18px 22px 0; font-size: 17px; letter-spacing: -.02em; }
+.modal .mbody { padding: 16px 22px; display: flex; flex-direction: column; gap: 14px; }
+.modal .mfoot {
+  padding: 14px 22px; border-top: 1px solid var(--border);
+  display: flex; gap: 9px; justify-content: flex-end; position: sticky; bottom: 0;
+  background: var(--panel);
+}
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
+.field .hint { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.check { display: flex; gap: 9px; align-items: flex-start; cursor: pointer; }
+.check input { margin: 3px 0 0; flex: none; }
+.check .t { font-size: 13px; }
+.check .t small { display: block; color: var(--muted); font-size: 11.5px; }
+
+.preview {
+  background: var(--panel-2); border-radius: 10px; padding: 11px 13px;
+  font-size: 12.5px; display: flex; gap: 9px; align-items: center;
+}
+.preview.err { color: var(--bad); }
+
+.toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow);
+  padding: 11px 18px; border-radius: 11px; z-index: 60; font-size: 13px;
+  animation: rise .22s ease;
+}
+@keyframes rise { from { opacity: 0; transform: translate(-50%, 10px); } }
+.toast.err { border-color: var(--bad); color: var(--bad); }
+
+.spinner {
+  width: 13px; height: 13px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite;
+  flex: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 780px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">▼</div>
+      <div><h1>ytarchive <span id="appVersion" style="font-size:11px;font-weight:400;color:var(--muted)"></span><small id="dirLabel">local archive</small></h1></div>
+    </div>
+
+    <nav>
+      <button data-view="library" class="on">Library <span class="count" id="cLib">0</span></button>
+      <button data-view="sources">Sources <span class="count" id="cSrc">0</span></button>
+      <button data-view="queue">Queue <span class="count" id="cQ">0</span></button>
+      <button data-view="failed">Failed <span class="count" id="cF">0</span></button>
+      <button data-view="log">Log</button>
+    </nav>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Archived</div>
+        <div class="v" id="sBytes">0 B <small id="sCount">0 videos</small></div></div>
+      <div class="stat"><div class="k">Disk free</div><div class="v" id="sFree">–</div></div>
+      <div class="stat"><div class="k">Hourly check</div>
+        <div class="v" style="font-size:14px" id="sSched">–</div></div>
+      <div class="stat"><div class="k">yt-dlp</div>
+        <div class="v" style="font-size:14px" id="sYtdlp">–</div></div>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <h2 id="viewTitle">Library</h2>
+      <div class="spacer"></div>
+      <input type="search" id="search" placeholder="Search titles…"
+             style="width:210px" hidden>
+      <span class="seg" id="viewMode" hidden>
+        <button data-mode="list">List</button>
+        <button data-mode="grid">Grid</button>
+      </span>
+      <button class="btn" id="btnRun">Check now</button>
+      <button class="btn primary" id="btnAdd">Add source</button>
+    </header>
+    <div class="content">
+      <div id="live"></div>
+      <div id="view"></div>
+    </div>
+  </main>
+</div>
+
+<div id="modalHost"></div>
+<div id="toastHost"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function human(n) {
+  n = Number(n) || 0;
+  const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return (i === 0 ? Math.round(n) : n.toFixed(1)) + ' ' + u[i];
+}
+function eta(s) {
+  if (s == null || s < 0) return '--:--';
+  s = Math.round(s);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}`
+           : `${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}`;
+}
+
+let STATE = null, VIEW = 'library', LIB = [], QUERY = '', busyPost = false;
+// Library layout preference, remembered between visits.
+let MODE = localStorage.getItem('ytaMode') || 'list';
+// Last HTML written to the view, so unchanged renders skip the DOM entirely.
+let lastHTML = '';
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  let j = null;
+  try { j = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((j && j.error) || r.statusText);
+  return j;
+}
+const post = (path, body) =>
+  api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body || {}) });
+
+function toast(msg, isErr) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (isErr ? ' err' : '');
+  el.textContent = msg;
+  $('#toastHost').append(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+/* ---------------- live activity ---------------- */
+function renderLive() {
+  const host = $('#live');
+  const p = STATE.progress, act = STATE.activity;
+
+  if (act && act.busy) {
+    host.innerHTML = `<div class="live">
+      <div class="top"><span class="spinner"></span>
+        <span class="title">${esc(act.message || 'Working…')}</span></div>
+      <div class="track"><div class="fill indeterminate"></div></div>
+      <div class="meta">Listing every video in the source — large playlists take a moment.</div>
+    </div>`;
+    return;
+  }
+  if (!p) {
+    host.innerHTML = STATE.running
+      ? `<div class="live"><div class="top"><span class="spinner"></span>
+           <span class="title">Checking sources…</span></div>
+         <div class="track"><div class="fill indeterminate"></div></div></div>`
+      : '';
+    return;
+  }
+  if (p.stage === 'updating') {
+    host.innerHTML = `<div class="live">
+      <div class="top"><span class="spinner"></span>
+        <span class="title">Updating yt-dlp…</span></div>
+      <div class="track"><div class="fill indeterminate"></div></div>
+      <div class="meta">Checking for a newer version before downloading.</div></div>`;
+    return;
+  }
+  if (p.stage === 'checking') {
+    host.innerHTML = `<div class="live">
+      <div class="top"><span class="spinner"></span>
+        <span class="title">Checking ${esc(p.title || '')}</span></div>
+      <div class="track"><div class="fill indeterminate"></div></div></div>`;
+    return;
+  }
+
+  const pct = Math.max(0, Math.min(100, p.percent || 0));
+  const downloading = p.stage === 'downloading';
+  host.innerHTML = `<div class="live">
+    <div class="top">
+      <span class="title">${esc(p.title || '')}</span>
+      <span class="pct">${pct.toFixed(1)}%</span>
+    </div>
+    <div class="sub">${esc(p.source || '')} · ${esc(p.quality || '')}
+      ${p.index ? `· ${p.index} of ${p.queue_len}` : ''}</div>
+    <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+    <div class="meta">
+      ${downloading ? `<span>${human(p.downloaded)} of ${human(p.total)}</span>
+        <span>${human(p.speed)}/s</span><span>ETA ${eta(p.eta)}</span>
+        ${p.part > 1 ? `<span>part ${p.part}</span>` : ''}`
+      : `<span>${esc(p.stage)}…</span>`}
+    </div></div>`;
+}
+
+/* ---------------- views ---------------- */
+function renderLibrary() {
+  const items = LIB.filter(v => !QUERY ||
+    (v.title || '').toLowerCase().includes(QUERY.toLowerCase()));
+  if (!items.length) {
+    return STATE.sources.length
+      ? `<div class="empty"><div class="big">📼</div><h3>Nothing archived yet</h3>
+         <p>Hit <b>Check now</b> to start downloading.</p></div>`
+      : `<div class="empty"><div class="big">📼</div><h3>No sources yet</h3>
+         <p>Add a playlist, channel or video to start archiving.</p></div>`;
+  }
+  return MODE === 'list' ? renderLibraryList(items) : renderLibraryGrid(items);
+}
+
+function renderLibraryList(items) {
+  const total = items.reduce((n, v) => n + (v.filesize || 0), 0);
+  return `<div style="color:var(--muted);font-size:12px;margin-bottom:10px">
+      ${items.length} videos · ${human(total)}</div>
+    <div class="list">` + items.map(v => `
+    <div class="lrow">
+      <div class="th"><img loading="lazy" src="/thumb/${encodeURIComponent(v.id)}"
+           alt="" onerror="this.remove()"></div>
+      <div class="t">
+        <div title="${esc(v.title)}">${esc(v.title)}</div>
+        <small>${esc(v.source_title || '')}${v.quality ? ' · ' + esc(v.quality) : ''}</small>
+      </div>
+      <div class="sz">${human(v.filesize)}</div>
+      ${STATE.in_container ? '<span></span>' :
+        `<button class="btn sm ghost" data-reveal="${esc(v.filepath)}">Reveal</button>`}
+    </div>`).join('') + `</div>`;
+}
+
+function renderLibraryGrid(items) {
+  return `<div class="grid">` + items.map(v => `
+    <div class="card">
+      <div class="thumb">
+        <img loading="lazy" src="/thumb/${encodeURIComponent(v.id)}" alt=""
+             onerror="this.remove()">
+        ${v.quality ? `<span class="badge">${esc(v.quality)}</span>` : ''}
+      </div>
+      <div class="body">
+        <div class="name" title="${esc(v.title)}">${esc(v.title)}</div>
+        <div class="foot">
+          <span class="grow">${esc(v.source_title || '')}</span>
+          <span>${human(v.filesize)}</span>
+        </div>
+        ${STATE.in_container ? '' : `<div class="foot">
+          <button class="btn sm ghost" data-reveal="${esc(v.filepath)}">Reveal file</button>
+        </div>`}
+      </div>
+    </div>`).join('') + `</div>`;
+}
+
+function qualityOptions(sel) {
+  return STATE.qualities.map(q =>
+    `<option value="${q.value}" ${q.value === sel ? 'selected' : ''}>${esc(q.label)}</option>`
+  ).join('');
+}
+function containerOptions(quality, sel) {
+  const list = quality === 'audio' ? STATE.audio_containers : STATE.video_containers;
+  return list.map(c =>
+    `<option value="${c}" ${c === sel ? 'selected' : ''}>${c === 'original' ? 'Original container' : c.toUpperCase()}</option>`
+  ).join('');
+}
+
+function renderSources() {
+  if (!STATE.sources.length) {
+    return `<div class="empty"><div class="big">🗂</div><h3>No sources yet</h3>
+      <p>Track a playlist or a whole channel — every video in it gets archived,
+         and new additions are picked up automatically.</p></div>`;
+  }
+  return `<div class="rows">` + STATE.sources.map(s => {
+    const total = s.done + s.pending;
+    const pct = total ? Math.round(s.done / total * 100) : 0;
+    return `<div class="row ${s.enabled ? '' : 'off'}">
+      <div class="info">
+        <div class="nm">${esc(s.title || s.id)}
+          <span class="tag ${s.kind === 'playlist' ? 'pl' : ''}">${esc(s.kind)}</span>
+          ${s.failed ? `<span class="tag" style="color:var(--bad)">${s.failed} failed</span>` : ''}
+        </div>
+        <div class="sub">${s.done} archived · ${s.pending} queued · ${human(s.bytes)}</div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+      </div>
+      <div class="ctl">
+        <select onchange="changeQuality('${s.id}', this.value)">${qualityOptions(s.quality)}</select>
+        <select onchange="updateSource('${s.id}', {container:this.value})">
+          ${containerOptions(s.quality, s.container)}</select>
+        <button class="btn sm" onclick="updateSource('${s.id}', {enabled:${s.enabled ? 0 : 1}})">
+          ${s.enabled ? 'Pause' : 'Resume'}</button>
+        <button class="btn sm danger" onclick="removeSource('${s.id}', '${esc((s.title || '').replace(/'/g, ''))}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function renderQueue() {
+  if (!STATE.queue.length) {
+    return `<div class="empty"><div class="big">✓</div><h3>Queue is empty</h3>
+      <p>Everything tracked has been archived.</p></div>`;
+  }
+  return `<div class="list">` + STATE.queue.map(v => `
+    <div class="item">
+      <div class="n"><div>${esc(v.title || v.id)}</div>
+        <small>${esc(v.source_title || '')} · ${esc(v.quality)}</small></div>
+      <span class="pill ${v.status === 'deferred' ? 'defer' : 'wait'}">
+        ${v.status === 'deferred' ? 'not out yet' : 'queued'}</span>
+    </div>`).join('') + `</div>`;
+}
+
+function renderFailed() {
+  if (!STATE.failures.length) {
+    return `<div class="empty"><div class="big">✓</div><h3>No failures</h3></div>`;
+  }
+  return `<div style="margin-bottom:12px">
+      <button class="btn" onclick="retryAll()">Retry all</button></div>
+    <div class="list">` + STATE.failures.map(v => `
+    <div class="item">
+      <div class="n"><div>${esc(v.title || v.id)}</div>
+        <small>${esc(v.source_title || '')} · ${esc(v.last_error || '')}</small></div>
+      <span class="pill ${v.status === 'dead' ? 'bad' : 'defer'}">
+        ${v.status === 'dead' ? 'unavailable' : `${v.attempts} tries · retrying`}</span>
+      <button class="btn sm" onclick="retryOne('${v.id}')">Retry now</button>
+    </div>`).join('') + `</div>`;
+}
+
+function renderLog() {
+  const lines = (STATE.log || []).slice(-200).reverse();
+  if (!lines.length) return `<div class="empty">Nothing logged yet.</div>`;
+  return `<pre class="log">` + lines.map(l => {
+    const m = l.match(/^(\[[^\]]+\])\s*(.*)$/);
+    return m ? `${esc(m[1])} <b>${esc(m[2])}</b>` : esc(l);
+  }).join('\n') + `</pre>`;
+}
+
+const VIEWS = {
+  library: { title: 'Library', render: renderLibrary, search: true },
+  sources: { title: 'Sources', render: renderSources },
+  queue:   { title: 'Queue', render: renderQueue },
+  failed:  { title: 'Failed', render: renderFailed },
+  log:     { title: 'Activity log', render: renderLog },
+};
+
+function paint() {
+  if (!STATE) return;
+  const v = VIEWS[VIEW];
+  $('#viewTitle').textContent = v.title;
+  $('#search').hidden = !v.search;
+  $('#viewMode').hidden = !v.search;
+  document.querySelectorAll('#viewMode button').forEach(
+    b => b.classList.toggle('on', b.dataset.mode === MODE));
+
+  // Only touch the DOM when the output actually changed. Rewriting innerHTML
+  // on every poll would restart every <img> before it could finish loading,
+  // and would throw away the scroll position several times a second.
+  const html = v.render();
+  if (html !== lastHTML) {
+    $('#view').innerHTML = html;
+    lastHTML = html;
+  }
+  renderLive();
+
+  const t = STATE.totals;
+  $('#cLib').textContent = t.archived;
+  $('#cSrc').textContent = STATE.sources.length;
+  $('#cQ').textContent = t.pending;
+  $('#cF').textContent = t.failed;
+  $('#sBytes').innerHTML = `${human(t.bytes)} <small>${t.archived} videos</small>`;
+  $('#sFree').textContent = human(t.free) + ' free';
+  $('#sSched').textContent =
+    STATE.interval_minutes ? `On — every ${STATE.interval_minutes} min`
+    : STATE.schedule_stale ? 'BROKEN — hover for why'
+    : STATE.scheduled ? 'On — every hour'
+    : STATE.in_container ? 'Off — set YTARCHIVE_INTERVAL'
+    : 'Off';
+  $('#sSched').style.color = STATE.schedule_stale ? 'var(--bad)' : '';
+  $('#sSched').title = STATE.schedule_stale
+    ? `The schedule ${STATE.schedule_stale}. Run "schedule install" from this folder.` : '';
+  $('#appVersion').textContent = STATE.version ? 'v' + STATE.version : '';
+  const y = STATE.ytdlp || {};
+  $('#sYtdlp').innerHTML = y.installed
+    ? `${esc(y.installed)} <small>${y.configured && y.hours > 0
+        ? `auto-update ${y.hours}h · ${esc(y.method || '')}${y.channel === 'nightly' ? ' · nightly' : ''}`
+        : 'manual updates'}</small>`
+    : '<span style="color:var(--bad)">not found</span>';
+  $('#dirLabel').textContent = STATE.config.download_dir.replace(/^.*\//, '') || 'local archive';
+  $('#dirLabel').title = STATE.config.download_dir;
+
+  const run = $('#btnRun');
+  run.textContent = STATE.running ? 'Stop' : 'Check now';
+  run.classList.toggle('danger', !!STATE.running);
+}
+
+/* ---------------- actions ---------------- */
+async function refresh() {
+  try {
+    const prevBusy = STATE && STATE.activity && STATE.activity.busy;
+    STATE = await api('/api/state');
+    if (VIEW === 'library') LIB = await api('/api/library');
+    if (prevBusy && !STATE.activity.busy) {
+      if (STATE.activity.error) toast(STATE.activity.error, true);
+      else if (STATE.activity.message) toast(STATE.activity.message);
+    }
+    paint();
+  } catch (e) { /* server restarting; next tick retries */ }
+}
+
+async function guard(fn) {
+  if (busyPost) return;
+  busyPost = true;
+  try { await fn(); } catch (e) { toast(e.message, true); }
+  busyPost = false;
+  refresh();
+}
+
+const reveal = p => post('/api/reveal', { path: p, reveal: true }).catch(() => {});
+const retryAll = () => guard(async () => {
+  const r = await post('/api/retry', {}); toast(`Requeued ${r.requeued} video(s)`); });
+const retryOne = id => guard(async () => {
+  await post('/api/retry', { id }); toast('Requeued'); });
+
+const updateSource = (id, patch) => guard(async () => {
+  await post('/api/source/update', Object.assign({ id }, patch)); });
+
+function changeQuality(id, quality) {
+  const s = STATE.sources.find(x => x.id === id);
+  const list = quality === 'audio' ? STATE.audio_containers : STATE.video_containers;
+  const container = list.includes(s.container) ? s.container : list[0];
+  guard(async () => {
+    await post('/api/source/update', { id, quality, container });
+    toast('Applies to videos not yet downloaded. Use Re-download for existing ones.');
+  });
+}
+
+function removeSource(id, title) {
+  openModal(`
+    <h3>Remove ${esc(title)}?</h3>
+    <div class="mbody">
+      <div>It stops being checked. Files already downloaded are kept either way.</div>
+      <label class="check"><input type="checkbox" id="purge">
+        <span class="t">Also forget its archive history
+          <small>Re-adding it later would download everything again.</small></span></label>
+    </div>
+    <div class="mfoot">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" id="ok">Remove</button>
+    </div>`, () => {
+    $('#ok').onclick = () => {
+      const purge = $('#purge').checked;
+      closeModal();
+      guard(async () => { await post('/api/source/remove', { id, purge }); toast('Removed'); });
+    };
+  });
+}
+
+function toggleRun() {
+  guard(async () => {
+    if (STATE.running) { await post('/api/stop'); toast('Stopping after the current file…'); }
+    else { await post('/api/run'); toast('Checking sources…'); }
+  });
+}
+
+/* ---------------- add dialog ---------------- */
+function openModal(html, after) {
+  $('#modalHost').innerHTML = `<div class="scrim"><div class="modal">${html}</div></div>`;
+  $('.scrim').onclick = e => { if (e.target === $('.scrim')) closeModal(); };
+  if (after) after();
+}
+const closeModal = () => { $('#modalHost').innerHTML = ''; };
+
+function openAdd() {
+  openModal(`
+    <h3>Add a playlist, channel or video</h3>
+    <div class="mbody">
+      <div class="field">
+        <label>YouTube URL, @handle, or ID</label>
+        <input type="text" id="url" placeholder="https://www.youtube.com/playlist?list=…"
+               autocomplete="off" spellcheck="false">
+        <div class="hint">A playlist or channel gets its own folder and new additions are
+          picked up on every check. A single video goes straight into the main folder.</div>
+      </div>
+      <div id="prev"></div>
+      <div class="two">
+        <div class="field"><label>Quality</label>
+          <select id="q">${qualityOptions(STATE.config.default_quality)}</select></div>
+        <div class="field"><label>Format</label>
+          <select id="c">${containerOptions(STATE.config.default_quality, STATE.config.default_container)}</select></div>
+      </div>
+      <div class="field">
+        <label>Limit (0 = the whole thing)</label>
+        <input type="number" id="lim" value="0" min="0">
+        <div class="hint">Set a number to take only that many of the most recent videos.</div>
+      </div>
+      <label class="check"><input type="checkbox" id="onlynew">
+        <span class="t">Only future uploads
+          <small>Skip the back catalogue and archive what appears from now on.</small></span></label>
+      <label class="check"><input type="checkbox" id="start" checked>
+        <span class="t">Start downloading right away</span></label>
+    </div>
+    <div class="mfoot">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" id="go">Add source</button>
+    </div>`, () => {
+    const url = $('#url'), q = $('#q'), c = $('#c'), prev = $('#prev');
+    url.focus();
+
+    q.onchange = () => { c.innerHTML = containerOptions(q.value, null); };
+
+    let timer, lastLookup = '';
+    url.oninput = () => {
+      clearTimeout(timer);
+      const val = url.value.trim();
+      if (val.length < 4 || val === lastLookup) return;
+      timer = setTimeout(async () => {
+        lastLookup = val;
+        prev.innerHTML = `<div class="preview"><span class="spinner"></span>Looking up…</div>`;
+        try {
+          const info = await api('/api/resolve?url=' + encodeURIComponent(val));
+          prev.innerHTML = `<div class="preview">✓ <b>${esc(info.title)}</b>
+            <span style="color:var(--muted)">· ${esc(info.kind)}</span></div>`;
+        } catch (e) {
+          prev.innerHTML = `<div class="preview err">Could not resolve that — check the link.</div>`;
+        }
+      }, 550);
+    };
+    url.onkeydown = e => { if (e.key === 'Enter') $('#go').click(); };
+
+    $('#go').onclick = () => {
+      const payload = {
+        url: url.value.trim(), quality: q.value, container: c.value,
+        limit: Number($('#lim').value) || 0,
+        only_new: $('#onlynew').checked, start: $('#start').checked,
+      };
+      if (!payload.url) { url.focus(); return; }
+      closeModal();
+      guard(async () => { await post('/api/sources', payload); });
+    };
+  });
+}
+
+/* ---------------- wiring ---------------- */
+document.querySelectorAll('nav button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('nav button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    VIEW = b.dataset.view;
+    refresh();
+  };
+});
+// The file path travels in a data attribute, never inside inline script. HTML
+// escaping cannot make a value safe inside an onclick string - the browser
+// decodes it first - so a filename such as  x');alert(1);('  would run as code,
+// and any title containing an apostrophe broke the button.
+document.addEventListener('click', e => {
+  const button = e.target.closest('[data-reveal]');
+  if (button) reveal(button.dataset.reveal);
+});
+$('#btnAdd').onclick = openAdd;
+$('#btnRun').onclick = toggleRun;
+$('#search').oninput = e => { QUERY = e.target.value; paint(); };
+document.querySelectorAll('#viewMode button').forEach(b => {
+  b.onclick = () => { MODE = b.dataset.mode; localStorage.setItem('ytaMode', MODE); paint(); };
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+refresh();
+setInterval(() => {
+  const fast = STATE && (STATE.running || (STATE.activity && STATE.activity.busy));
+  if (fast || Date.now() % 4000 < 1200) refresh();
+}, 1200);
+</script>
+</body>
+</html>

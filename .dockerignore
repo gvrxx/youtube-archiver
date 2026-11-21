@@ -1,0 +1,33 @@
+# Only the application files belong in the image.
+.git
+.gitignore
+.github
+
+# Local state — must never be baked in, or every container would start with
+# someone else's archive history.
+config.json
+state.db
+state.db-wal
+state.db-shm
+downloaded.txt
+.ytdlp-update.json
+logs/
+.progress.json
+.run.lock
+.stop
+.lastpath.*
+
+# Local volume dirs when using docker-compose from this folder
+config/
+downloads/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+
+# Docs and packaging are not needed at runtime
+README.md
+DOCKER.md
+docker-compose.yml

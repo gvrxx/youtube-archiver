@@ -1,0 +1,37 @@
+# Local state — never useful to anyone else, and state.db holds your archive history
+state.db
+state.db-wal
+state.db-shm
+downloaded.txt
+.ytdlp-update.json
+config.json
+logs/
+.progress.json
+.run.lock
+.stop
+.lastpath.*
+
+# Bind-mount dirs created by docker-compose when run from this folder
+config/
+downloads/
+*.mp4
+*.mkv
+*.webm
+*.m4a
+*.mp3
+*.opus
+*.flac
+*.info.json
+*.vtt
+*.srt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

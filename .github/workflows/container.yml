@@ -1,0 +1,72 @@
+name: container
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - docker-entrypoint.sh
+      - "*.py"
+      - ui.html
+      - unraid-template.xml
+      - .github/smoke-test.sh
+      - .github/workflows/container.yml
+  # Weekly rebuild picks up the latest yt-dlp, ffmpeg and base-image security
+  # fixes, so a freshly created container never starts badly out of date.
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: container
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Read version
+        id: version
+        run: |
+          echo "version=$(python3 -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('ytarchive.py').read()).group(1))")" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ytarchive:test
+          # Update scripts read this to report which version they installed.
+          labels: org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test (runs the image the way Unraid does)
+        run: .github/smoke-test.sh ytarchive:test
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish
+        run: |
+          short="${GITHUB_SHA::7}"
+          version="${{ steps.version.outputs.version }}"
+          for tag in latest "$version" "sha-$short"; do
+            docker tag ytarchive:test "$IMAGE:$tag"
+            docker push "$IMAGE:$tag"
+          done

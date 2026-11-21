@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>ytarchive</Name>
+  <Repository>ghcr.io/gvrxx/youtube-archiver:latest</Repository>
+  <Registry>https://github.com/gvrxx/youtube-archiver/pkgs/container/youtube-archiver</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/gvrxx/youtube-archiver/issues</Support>
+  <Project>https://github.com/gvrxx/youtube-archiver</Project>
+  <Overview>
+    Archives YouTube playlists and channels locally. Point it at a playlist or a
+    whole channel, choose a quality, and it keeps a local copy of everything in
+    it — then re-checks on an interval and picks up anything new.
+
+    Per-source quality (original down to 360p, or audio-only) and container
+    (original / mkv / mp4, or m4a / mp3 / opus / flac). Three independent
+    guards prevent the same video being downloaded twice, so restarts and lost
+    state are safe.
+
+    IMPORTANT: the web interface has no login unless you set YTARCHIVE_AUTH.
+    Anyone who can reach the port can add sources and start downloads, so set a
+    password if this host is not fully trusted.
+  </Overview>
+  <Category>MediaApp:Video Downloaders: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8800]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/gvrxx/youtube-archiver/main/unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/gvrxx/youtube-archiver/main/icon.png</Icon>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <ExtraParams>--init</ExtraParams>
+
+  <Config Name="WebUI Port" Target="8800" Default="8800" Mode="tcp"
+          Description="Port for the web interface."
+          Type="Port" Display="always" Required="true" Mask="false">8800</Config>
+
+  <Config Name="Config" Target="/config" Default="/mnt/user/appdata/ytarchive"
+          Mode="rw" Description="Settings, database and logs. Small — but back it up, it is what stops videos being re-downloaded."
+          Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ytarchive</Config>
+
+  <Config Name="Downloads" Target="/downloads" Default=""
+          Mode="rw" Description="Where archived videos are written - pick any share or folder. Each playlist and channel gets its own folder inside it; single videos go straight into it."
+          Type="Path" Display="always" Required="true" Mask="false"/>
+
+  <Config Name="Check interval (minutes)" Target="YTARCHIVE_INTERVAL" Default="60"
+          Mode="" Description="How often to look for new videos. 0 disables automatic checks."
+          Type="Variable" Display="always" Required="false" Mask="false">60</Config>
+
+  <Config Name="Login (user:password)" Target="YTARCHIVE_AUTH" Default=""
+          Mode="" Description="STRONGLY RECOMMENDED. Format: user:password. Without this the interface is open to anyone who can reach the port, and it can start downloads and change settings."
+          Type="Variable" Display="always" Required="false" Mask="true"/>
+
+  <Config Name="PUID" Target="PUID" Default="99" Mode=""
+          Description="User id that owns written files. Unraid default is 99 (nobody)."
+          Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+
+  <Config Name="PGID" Target="PGID" Default="100" Mode=""
+          Description="Group id that owns written files. Unraid default is 100 (users)."
+          Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+
+  <Config Name="UMASK" Target="UMASK" Default="022" Mode=""
+          Description="Permission mask for new files."
+          Type="Variable" Display="advanced" Required="false" Mask="false">022</Config>
+
+  <Config Name="yt-dlp auto-update (hours)" Target="YTARCHIVE_YTDLP_UPDATE_HOURS" Default="24" Mode=""
+          Description="How often to update yt-dlp while the container runs. YouTube breaks older versions within weeks and downloads then stop silently, so keep this on. 0 disables it."
+          Type="Variable" Display="always" Required="false" Mask="false">24</Config>
+
+  <Config Name="yt-dlp channel" Target="YTARCHIVE_YTDLP_CHANNEL" Default="stable|nightly" Mode=""
+          Description="stable, or nightly to receive YouTube fixes days or weeks sooner. Switch to nightly if downloads keep failing."
+          Type="Variable" Display="advanced" Required="false" Mask="false">stable</Config>
+
+</Container>

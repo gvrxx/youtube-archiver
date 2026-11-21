@@ -1,0 +1,7 @@
+# Windows batch files need CRLF line endings.
+*.bat      text eol=crlf
+# Shell scripts must keep LF everywhere. A Windows checkout converting
+# docker-entrypoint.sh to CRLF would build an image whose entrypoint fails
+# with "bash\r: not found".
+*.sh       text eol=lf
+*.command  text eol=lf
