@@ -12,7 +12,7 @@ Stdlib only. Requires the `yt-dlp` and `ffmpeg` binaries on PATH.
 from __future__ import annotations
 
 # Bump with every change worth noting, and add a matching CHANGELOG.md entry.
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 
 import argparse
 import csv

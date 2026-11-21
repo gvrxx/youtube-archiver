@@ -49,7 +49,7 @@
           Type="Variable" Display="always" Required="false" Mask="false">60</Config>
 
   <Config Name="Login (user:password)" Target="YTARCHIVE_AUTH" Default=""
-          Mode="" Description="STRONGLY RECOMMENDED. Format: user:password. Without this the interface is open to anyone who can reach the port, and it can start downloads and change settings."
+          Mode="" Description="STRONGLY RECOMMENDED. Format: user:password - or just a password, then any username works. Without this the interface is open to anyone who can reach the port, and it can start downloads and change settings."
           Type="Variable" Display="always" Required="false" Mask="true"/>
 
   <Config Name="PUID" Target="PUID" Default="99" Mode=""

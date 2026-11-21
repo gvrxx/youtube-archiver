@@ -237,6 +237,29 @@ class SingleVideos(unittest.TestCase):
         self.assertEqual((res["queued"], res["adopted"]), (0, 1))
 
 
+class Login(unittest.TestCase):
+    """The web interface's login, as set in YTARCHIVE_AUTH."""
+
+    def allowed(self, auth, user, password):
+        import base64
+        import webui
+        handler = webui.Handler.__new__(webui.Handler)
+        token = base64.b64encode(f"{user}:{password}".encode()).decode()
+        handler.headers = {"Authorization": "Basic " + token}
+        with mock.patch.object(webui, "AUTH", auth):
+            return handler.authorised()
+
+    def test_user_and_password_must_both_match(self):
+        self.assertTrue(self.allowed("admin:pw", "admin", "pw"))
+        self.assertFalse(self.allowed("admin:pw", "other", "pw"))
+        self.assertFalse(self.allowed("admin:pw", "admin", "nope"))
+
+    def test_password_only_login_accepts_any_username(self):
+        # Set as just a password, no username could ever log in.
+        self.assertTrue(self.allowed("pw", "anything", "pw"))
+        self.assertFalse(self.allowed("pw", "anything", "nope"))
+
+
 class Versioning(unittest.TestCase):
     """Every release has a version, and the changelog says what changed in it."""
 

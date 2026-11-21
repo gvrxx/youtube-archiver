@@ -3,7 +3,12 @@
 Every change worth noting gets a version and an entry here. The running version
 shows in `ytarchive.py status`, `ytarchive.py --version`, and next to the title
 in the web interface. Docker images are tagged with it too, e.g.
-`ghcr.io/gvrxx/youtube-archiver:1.1.2`.
+`ghcr.io/gvrxx/youtube-archiver:1.1.3`.
+
+## 1.1.3 (2026-11-21)
+
+- A login set as just a password (no `user:`) now works with any username.
+  Before, no username could log in. Passwords with accented letters work too.
 
 ## 1.1.2 (2026-11-21)
 

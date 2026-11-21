@@ -284,8 +284,12 @@ class Handler(BaseHTTPRequestHandler):
             given = base64.b64decode(header[6:]).decode("utf-8")
         except (ValueError, UnicodeDecodeError):
             return False
+        # A login set as just a password, without "user:", accepts any
+        # username - otherwise nothing could ever match it.
+        if ":" not in AUTH:
+            given = given.partition(":")[2]
         # compare_digest avoids leaking the password through timing
-        return hmac.compare_digest(given, AUTH)
+        return hmac.compare_digest(given.encode(), AUTH.encode())
 
     def require_auth(self) -> bool:
         """Returns True when the request may proceed."""
