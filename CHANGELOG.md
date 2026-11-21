@@ -3,7 +3,11 @@
 Every change worth noting gets a version and an entry here. The running version
 shows in `ytarchive.py status`, `ytarchive.py --version`, and next to the title
 in the web interface. Docker images are tagged with it too, e.g.
-`ghcr.io/gvrxx/youtube-archiver:1.1.3`.
+`ghcr.io/gvrxx/youtube-archiver:1.1.4`.
+
+## 1.1.4 (2026-11-21)
+
+- Dark red colours in the web interface, matching the new red app icon.
 
 ## 1.1.3 (2026-11-21)
 
